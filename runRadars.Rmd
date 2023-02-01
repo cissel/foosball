@@ -1,0 +1,206 @@
+---
+title: <span style="color:white">NFL Run Radars</span>
+author: <span style="color:white"> JHCV </span>
+date: <span style="color:white"> 2023-01-31 </span>
+output: html_document
+---
+
+<body style="background-color:#1c2e4a">
+<font style="color:white">
+
+```{css, echo=FALSE, warning = FALSE}
+.jhcv {
+  background-color: rgb(159, 199, 219);
+  border: 3px solid white;
+  font-weight: bold;
+}
+```
+
+I got all my inspiration here: "https://www.kaggle.com/code/statsbymichaellopez/nfl-tracking-wrangling-voronoi-and-sonars" <- all the credit in the world goes to this human
+
+```{r setup, include=TRUE, class.source="jhcv", warning = FALSE, message = FALSE}
+
+knitr::opts_chunk$set(echo = TRUE)
+
+##### Required packages #####
+
+library(tidyverse)
+library(nflfastR)
+library(scales)
+
+#####
+
+##### Plot Appearance Theme #####
+
+myTheme <- theme(legend.position = "none",
+                 plot.background = element_rect(fill = "#1c2e4a"),
+                 panel.background = element_rect(fill = "#1c2e4a"),
+                 panel.grid = element_line(color = "#274066"),
+                 axis.text = element_text(color = "white"),
+                 axis.title = element_text(color = "white",
+                                           hjust = .5),
+                 plot.title = element_text(color = "white",
+                                           hjust = .5),
+                 plot.subtitle = element_text(color = "white",
+                                              hjust = .5),
+                 strip.background = element_rect(fill = "#1c2e4a"),
+                 strip.text.x = element_text(color = "white"),
+                 plot.caption = element_text(color = "white",
+                                             size = 5))
+
+#####
+
+##### Legend appearance theme #####
+
+myLegend <- theme(legend.position = "right",
+                  legend.background = element_rect(fill = "#1c2e4a"),
+                  legend.text = element_text(color = "white"),
+                  legend.title = element_text(color = "white",
+                                              hjust = .5))
+
+#####
+
+```
+
+```{r, warning = FALSE, class.source="jhcv", message = FALSE, fig.width=13, fig.height=8} 
+
+# Import play by play data for each game from the 2022 season
+
+nfl22 <- load_pbp(2022) |> 
+  
+  subset(season_type == "REG") # only use data from reg szn
+
+runs22 <- nfl22 |> 
+  
+  subset(play_type == "run") |> # only look at run plays
+  
+  mutate("runDir" = as.factor(paste(run_location, # create a new variable called "runDir" that 
+                                    ifelse(run_location != "middle", # shows which direction 
+                                           run_gap, # the run went
+                                           ""), 
+                                    sep = " "))) 
+
+# Create a number for each direction, this will come in handy later
+
+rgp <- data.frame("runDir" = c("left end", 
+                              "left tackle", 
+                              "left guard",
+                              "middle",
+                              "right guard",
+                              "right tackle",
+                              "right end"),
+                  "rdn" = c(1, 
+                            2,
+                            3,
+                            4,
+                            5,
+                            6,
+                            7))
+
+rdf <- runs22 |> 
+  
+  subset(runDir != "NA NA") |> # filter out NAs
+  
+  group_by(runDir, posteam) |> # group by run direction & team w/ possession
+  
+  summarize(nRuns = n(), # create new varianble to count number of runs
+            mean_yards = mean(yards_gained), # new var for avg yards
+            tot_yards = sum(yards_gained), # new var for tot yards
+            mean_epa = mean(epa), # new var for avg exp. points added
+            tuddies = sum(touchdown)) # new var for touchdowns
+
+rdf$rdn <- 0 # initialize new var for run direction number from rgp above
+
+# maps each run direction to a run direction number
+
+for (i in 1:nrow(rdf)) {
+  
+  for (j in 1:nrow(rgp)) {
+    
+    if (rdf$runDir[i] == rgp$runDir[j]) {
+      
+      rdf$rdn[i] <- rgp$rdn[j]
+      
+    }
+    
+  }
+  
+}
+
+# for some reason i couldn't get the number 4 to map so i had to force it manually
+
+for (i in 1:nrow(rdf)) {
+  
+  if (rdf$rdn[i] == 0) {
+    
+    rdf$rdn[i] <- 4
+    
+  }
+  
+}
+
+# mapping each run direction to an angle
+
+nAngles <- 202.5/(7+2) # angle difference between each run direction
+
+rdf <- rdf |> 
+  
+  mutate("runAngle" = rdn*nAngles) # calculating run angles
+
+colfunc <- colorRampPalette(c("green", "white", "red")) # create color scale
+pal <- colfunc(nrow(rdf)) # maps bad/low to red, avg to white, and good/hi to green
+
+rcdf <- rdf |> arrange(-mean_yards) # sort by avg yards, highest first
+
+rcdf$fill <- "" # initializes variable for fill color
+
+for(i in 1:nrow(rcdf)) {
+  
+  for (j in 1:length(pal)) {
+    
+    rcdf$fill[i] <- pal[i] # maps fill color to each run direction
+    
+  }
+  
+}
+
+nrp <- ggplot(rcdf, aes(x = runAngle, # creating the plot where x is angle
+                        weight = nRuns), # y or weight is number of runs
+           stat = "identity") + # and we want to reference the angle itself
+  
+  geom_bar(aes(fill = fill)) + # create bar plot with colors we created above
+  
+  labs(x = "Run Direction", # plot labels, pretty self-explanatory
+       y = "Number of Runs",
+       subtitle = "Avg. Yards Gained",
+       title = "NFL Run Radars 2022",
+       caption = "JHCV") +
+  
+  
+  scale_color_identity() + # color by preassigned color
+  scale_fill_identity() + # fill by preassigned color
+  
+  myTheme + # use my navy blue blue background & white text theme
+  
+  coord_polar(start = (pi/-2), direction = 1) + # turn bar chart into polar chart
+  scale_x_continuous(limits = c(0, 360), # on a scale from zero to 360 degrees
+                     breaks = rcdf$runAngle, # break the chart at each run angle
+                     labels = rcdf$runDir) + # use text run direction as label
+  
+  facet_wrap(~posteam, nrow = 4) + # create a grid to plot each team
+  
+  theme(axis.text.x = element_text(size = 5)) # make the labels smaller
+
+nrp # show the plot!
+
+```
+
+
+
+
+
+
+
+
+
+
