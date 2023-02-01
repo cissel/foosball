@@ -16,7 +16,11 @@ output: html_document
 }
 ```
 
-I got all my inspiration here: "https://www.kaggle.com/code/statsbymichaellopez/nfl-tracking-wrangling-voronoi-and-sonars" <- all the credit in the world goes to this human
+I got all my inspiration here: 
+  
+"https://www.kaggle.com/code/statsbymichaellopez/nfl-tracking-wrangling-voronoi-and-sonars" 
+  
+^ all the credit for this project goes to this human. many thanks, stranger.
 
 ```{r setup, include=TRUE, class.source="jhcv", warning = FALSE, message = FALSE}
 
@@ -64,7 +68,7 @@ myLegend <- theme(legend.position = "right",
 
 ```{r, warning = FALSE, class.source="jhcv", message = FALSE, fig.width=13, fig.height=8} 
 
-# Import play by play data for each game from the 2022 season
+# Import play by play data for each game from the 2022 season as nfl22
 
 nfl22 <- load_pbp(2022) |> 
   
@@ -74,9 +78,9 @@ runs22 <- nfl22 |>
   
   subset(play_type == "run") |> # only look at run plays
   
-  mutate("runDir" = as.factor(paste(run_location, # create a new variable called "runDir" that 
-                                    ifelse(run_location != "middle", # shows which direction 
-                                           run_gap, # the run went
+  mutate("runDir" = as.factor(paste(run_location, # create a new variable called "runDir" that shows which direction the run went
+                                    ifelse(run_location != "middle",  
+                                           run_gap,  
                                            ""), 
                                     sep = " "))) 
 
