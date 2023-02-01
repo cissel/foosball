@@ -194,13 +194,3 @@ nrp <- ggplot(rcdf, aes(x = runAngle, # creating the plot where x is angle
 nrp # show the plot!
 
 ```
-
-
-
-
-
-
-
-
-
-
