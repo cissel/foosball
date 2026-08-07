@@ -120,7 +120,71 @@ Pipeline runs in phases. Later phases depend on earlier phases' output files.
   Turns the strategy sim into a round-by-round printable card: "if I'm running zero RB, what position do I actually take in round 4."
 - **`python/nflMockDraftLog.py`**: grades a completed Sleeper mock draft against the VORP board and logs it so multiple mocks can be compared.
 - **`python/nflDraftWatch.py`**: live CLI draft assistant. Polls a real Sleeper draft (mock or real) and prints pick recommendations ranked by marginal starting-lineup VORP gain after every pick.
-- **`python/nflDraftDashboard.py`**: browser UI version of the draft watcher (Dash/Plotly). Same recommendation engine, meant to run on your laptop next to the Sleeper tab during a live draft.
+- **`python/nflDraftDashboard.py`**
+  ![Live Draft Dashboard](images/nflDraftDashboard.png)
+  Browser UI version of the draft watcher (Dash/Plotly). Same recommendation engine as the CLI watcher, meant to run on your laptop next to the Sleeper tab during a live draft.
+
+### Live draft tools: quick start (no coding experience needed)
+
+Both `nflDraftWatch.py` (plain text in a terminal) and `nflDraftDashboard.py` (a webpage) watch a Sleeper draft in real time and tell you who to pick. Everything runs on your own laptop, nothing is uploaded anywhere. Pick whichever one sounds friendlier — the dashboard looks nicer, the CLI watcher is a little more lightweight.
+
+**Before you start:** these tools need a `vorp_2026.csv` file (the actual player rankings/model output) sitting in `outputs/fantasy/` inside this folder. That file isn't included in the download since it's the output of the whole modeling pipeline, not source code. Ask James to send you his `outputs/fantasy` folder (zip it up, share via Discord/Drive/USB, whatever's easiest) and drop it into your copy of the repo before running anything below.
+
+**One-time setup (5 minutes):**
+
+1. Install Python from [python.org](https://www.python.org/downloads/) if you don't already have it (Windows/Mac installer, just click through the defaults). On the install screen, check the box that says "Add Python to PATH."
+2. Download this repo: click the green "Code" button on the GitHub page, then "Download ZIP," and unzip it somewhere you'll remember (like your Desktop).
+3. Open a terminal in that folder:
+   - **Windows**: open the unzipped folder in File Explorer, click the address bar, type `cmd`, hit Enter.
+   - **Mac**: open Terminal, type `cd ` (with a space), drag the unzipped folder into the terminal window, hit Enter.
+4. Install the required packages (copy/paste this whole line, hit Enter, wait for it to finish):
+   ```
+   pip install pandas numpy requests matplotlib scikit-learn dash plotly
+   ```
+
+**Find your draft ID:**
+
+Open your Sleeper mock or real draft in a browser. Look at the URL, it'll look something like:
+```
+https://sleeper.com/draft/nfl/1234567890123456789
+```
+The long number at the end is your draft ID. Copy it.
+
+**Find your draft slot:**
+
+This is just which pick number you go in round 1 (e.g. if you pick 5th, your slot is `5`).
+
+**Run the CLI watcher:**
+```
+python python/nflDraftWatch.py 1234567890123456789 5
+```
+(replace the number with your draft ID and `5` with your slot). Leave this terminal window open during the draft — it'll print new picks and your recommendations automatically every few seconds. Press Ctrl+C to stop it when the draft ends.
+
+Example output when it's your turn:
+```
+[14:32:07] Pick #34 is up next (slot 10).
+>>> YOUR TURN NOW <<<
+Your roster so far (2 picks): Amon-Ra St. Brown (WR), Omarion Hampton (RB)
+Still need: QB (0/1), RB (1/2), WR (1/2), TE (0/1)
+
+Top 8 recommendations right now (by marginal starting-lineup VORP gain):
+        full_name position team  adp_overall       vorp  value_gap  marginal_gain
+       Drake Maye       QB   NE        101.0 138.400604      100.0          138.4
+      Chris Olave       WR   NO         38.0  88.806879       29.0           88.8
+           Bo Nix       QB  DEN        105.0  67.374755       88.0           67.4
+```
+`marginal_gain` is the number that matters — it's how much your BEST STARTING LINEUP improves if you draft that specific player right now, not just their raw stat value. Higher is better.
+
+**Run the dashboard instead (nicer visuals):**
+```
+python python/nflDraftDashboard.py 1234567890123456789 5
+```
+Then open a web browser and go to `http://127.0.0.1:8877` — that's a page only your own computer can see, nobody else on the internet can reach it. Leave the terminal window open in the background while you use the dashboard in your browser; closing the terminal shuts the dashboard down. Refresh the page any time to see it re-poll the draft.
+
+**Troubleshooting:**
+- `command not found: python` → try `python3` instead of `python` in the commands above.
+- Nothing happens / hangs at "Draft not started yet" → the draft hasn't begun on Sleeper's end yet, or you've got the wrong draft ID. Double check the URL.
+- `ModuleNotFoundError` → you missed the `pip install` step above, or need to re-run it.
 
 ### Phase 5: Breakout candidates + rookies (Python + R)
 
