@@ -15,8 +15,8 @@ OUT_PATH <- file.path(OUT_DIR, "phase1_diagnostics.png")
 navy <- theme(
   plot.background   = element_rect(fill = "#02233F", color = NA),
   panel.background  = element_rect(fill = "#02233F", color = NA),
-  panel.grid.major  = element_line(color = "#1a3a5c", linewidth = 0.4),
-  panel.grid.minor  = element_line(color = "#122840", linewidth = 0.2),
+  panel.grid.major  = element_line(color = "#274066", linewidth = 0.4),
+  panel.grid.minor  = element_line(color = "#274066", linewidth = 0.2),
   axis.text         = element_text(color = "#a0b8cc", size = 8),
   axis.title        = element_text(color = "#cde0f0", size = 9),
   plot.title        = element_text(color = "white",   size = 13, face = "bold", hjust = 0),
