@@ -37,7 +37,7 @@ dark_theme <- theme(
   axis.title        = element_text(color = TXT, size = 9),
   plot.title        = element_text(color = TXT, hjust = 0.5, face = "bold", size = 13),
   plot.subtitle     = element_text(color = TXT, hjust = 0.5, size = 9),
-  plot.caption      = element_text(color = GRID, size = 7, hjust = 1),
+  plot.caption      = element_text(color = TXT, size = 7, hjust = 1),
   legend.background = element_rect(fill = BG, color = NA),
   legend.text       = element_text(color = TXT, size = 7.5),
   legend.title      = element_text(color = TXT, size = 8),

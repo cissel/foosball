@@ -50,6 +50,11 @@ N_TEAMS = 12
 POSITIONS = ["QB", "RB", "WR", "TE"]
 POS_COLORS = {"QB": "#7B4CE0", "RB": "#2E9E4E", "WR": "#2E7BE0", "TE": "#E0A02E"}
 
+# Navy house theme, matches the R plots (BG=#02233F, TXT=white)
+BG = "#02233F"
+TXT = "white"
+GRID = "#274066"
+
 
 def main():
     df = pd.read_csv(os.path.join(OUT_DIR, "vorp_2026.csv"))
@@ -91,19 +96,27 @@ def main():
 
     # ---- plot: VORP decay curve per position across rounds ----
     fig, ax = plt.subplots(figsize=(12, 7))
+    fig.patch.set_facecolor(BG)
+    ax.set_facecolor(BG)
     for pos in POSITIONS:
         ax.plot(round_means.index, round_means[pos], marker="o", label=pos,
                 color=POS_COLORS[pos], linewidth=2)
-    ax.set_xlabel("Draft Round (12-team, ADP-based)")
-    ax.set_ylabel("Mean VORP of players available in that round")
+    ax.set_xlabel("Draft Round (12-team, ADP-based)", color=TXT)
+    ax.set_ylabel("Mean VORP of players available in that round", color=TXT)
     ax.set_title("Room 40 - Positional Value Decay by Round\n"
-                  "(steeper slope = scarcer position = draft it sooner; flat = safe to wait)")
-    ax.axhline(0, color="gray", linewidth=0.8, linestyle="--")
-    ax.legend()
-    ax.grid(alpha=0.3)
+                  "(steeper slope = scarcer position = draft it sooner; flat = safe to wait)",
+                  color=TXT)
+    ax.axhline(0, color=TXT, linewidth=0.8, linestyle="--", alpha=0.6)
+    ax.tick_params(colors=TXT)
+    for spine in ax.spines.values():
+        spine.set_color(GRID)
+    legend = ax.legend(facecolor=BG, edgecolor=GRID)
+    for text in legend.get_texts():
+        text.set_color(TXT)
+    ax.grid(alpha=0.3, color=GRID)
     out_png = os.path.join(OUT_DIR, "positional_scarcity.png")
     plt.tight_layout()
-    plt.savefig(out_png, dpi=130)
+    plt.savefig(out_png, dpi=130, facecolor=BG)
     plt.close()
     print(f"Wrote: {out_png}")
 

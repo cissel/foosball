@@ -66,6 +66,11 @@ FLEX_ELIGIBLE = {"RB", "WR", "TE"}
 # into meaninglessness (mirrors realistic human draft behavior).
 POSITION_CAPS = {"QB": 3, "RB": 7, "WR": 7, "TE": 3}
 
+# Navy house theme, matches the R plots (BG=#02233F, TXT=white)
+BG = "#02233F"
+TXT = "white"
+GRID = "#274066"
+
 # BENCH UTILITY DISCOUNT: once a candidate's marginal starting-lineup gain is
 # ~0 (it can't start/flex), raw VORP is NOT a fair tiebreaker across positions
 # - a backup QB's VORP looks big purely because the QB replacement baseline
@@ -277,18 +282,28 @@ def main():
 
     # ---- plot: per-slot performance by strategy ----
     fig, ax = plt.subplots(figsize=(12, 7))
+    fig.patch.set_facecolor(BG)
+    ax.set_facecolor(BG)
     pivot = results_df.pivot(index="draft_slot", columns="strategy", values="starting_lineup_vorp")
     pivot = pivot[summary.index]  # order columns by overall rank
-    pivot.plot(kind="bar", ax=ax, width=0.8)
-    ax.set_xlabel("Draft Slot (1 = picks first)")
-    ax.set_ylabel("Starting Lineup VORP")
+    pivot.plot(kind="bar", ax=ax, width=0.8, legend=False)
+    ax.set_xlabel("Draft Slot (1 = picks first)", color=TXT)
+    ax.set_ylabel("Starting Lineup VORP", color=TXT)
     ax.set_title("Room 40 - Draft Strategy Comparison by Draft Slot\n"
-                  "(simulated: field drafts best-ADP-available, you follow each named strategy)")
-    ax.legend(title="Strategy")
-    ax.grid(alpha=0.3, axis="y")
+                  "(simulated: field drafts best-ADP-available, you follow each named strategy)",
+                  color=TXT)
+    ax.tick_params(colors=TXT)
+    for spine in ax.spines.values():
+        spine.set_color(GRID)
+    legend = ax.legend(title="Strategy", facecolor=BG, edgecolor=GRID)
+    legend.get_frame().set_alpha(1.0)
+    legend.get_title().set_color(TXT)
+    for text in legend.get_texts():
+        text.set_color(TXT)
+    ax.grid(alpha=0.3, axis="y", color=GRID)
     plt.tight_layout()
     out_png = os.path.join(OUT_DIR, "draft_strategy_sim.png")
-    plt.savefig(out_png, dpi=130)
+    plt.savefig(out_png, dpi=130, facecolor=BG)
     plt.close()
     print(f"Wrote: {out_png}")
 

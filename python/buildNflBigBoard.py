@@ -37,6 +37,10 @@ POS_COLORS = {"QB": "#7B4CE0", "RB": "#2E9E4E", "WR": "#2E7BE0", "TE": "#E0A02E"
 N_TIERS_TARGET = 16  # overall board is longer than one position, allow more tiers
 N_ROWS = 150  # ~12.5 rounds worth - covers a full draft plus a buffer
 
+# Navy house theme, matches the R plots (BG=#02233F, TXT=white)
+BG = "#02233F"
+TXT = "white"
+
 
 def assign_tiers(df, n_tiers):
     n = len(df)
@@ -75,10 +79,12 @@ def main():
     n_show = min(len(df), N_ROWS)
     fig_h = max(20, n_show * 0.16)
     fig, ax = plt.subplots(figsize=(9, fig_h))
+    fig.patch.set_facecolor(BG)
+    ax.set_facecolor(BG)
     ax.axis("off")
     ax.set_title("Room 40 - 2026 Big Board (Overall Draft Order, Cross-Position)\n"
                   "Rookies flagged (R) | value_gap: + = ADP undervalues, - = ADP overvalues",
-                  fontsize=15, fontweight="bold")
+                  fontsize=15, fontweight="bold", color=TXT)
 
     y = 1.0
     line_h = 1.0 / (n_show + df["tier"].nunique() + 2)
@@ -87,31 +93,31 @@ def main():
         if row["tier"] != prev_tier:
             y -= line_h * 0.4
             ax.text(0.0, y, f"— Tier {int(row['tier'])} —", fontsize=10,
-                    fontweight="bold", color="gray", transform=ax.transAxes)
+                    fontweight="bold", color="#7fa8c4", transform=ax.transAxes)
             y -= line_h
             prev_tier = row["tier"]
         rookie_flag = " (R)" if row.get("player_type") == "rookie" else ""
         gap = row["value_gap"]
         gap_str = f"+{gap:.0f}" if gap > 0 else f"{gap:.0f}"
-        gap_color = "green" if gap > 15 else ("red" if gap < -15 else "black")
+        gap_color = "#4caf50" if gap > 15 else ("#ff5252" if gap < -15 else TXT)
         label = (f"{int(row['overall_rank']):>3}. {row['full_name']}{rookie_flag} "
                  f"({row['position']}, {row['team']}) — ADP {row['adp_overall']:.0f}, {gap_str}")
         ax.text(0.02, y, label, fontsize=9, transform=ax.transAxes,
-                color=gap_color, fontweight="bold" if gap_color != "black" else "normal")
+                color=gap_color, fontweight="bold" if gap_color != TXT else "normal")
         # small position color tag
         ax.text(0.0, y, "\u2588", fontsize=9, transform=ax.transAxes,
-                color=POS_COLORS.get(row["position"], "black"))
+                color=POS_COLORS.get(row["position"], TXT))
         y -= line_h
 
     fig.text(0.5, 0.005,
               "CAVEAT: big red value_gap on players who missed significant 2025 time to injury "
               "(e.g. Burrow, Purdy) is a known model artifact, not a real fade - see "
               "injury_shortened_2025 flag in big_board_2026.csv before trusting those.",
-              ha="center", fontsize=8, style="italic", color="dimgray")
+              ha="center", fontsize=8, style="italic", color=TXT)
 
     plt.tight_layout(rect=[0, 0.01, 1, 0.97])
     out_png = os.path.join(OUT_DIR, "big_board_2026.png")
-    plt.savefig(out_png, dpi=130, bbox_inches="tight")
+    plt.savefig(out_png, dpi=130, bbox_inches="tight", facecolor=BG)
     plt.close()
     print(f"Wrote: {out_png}")
 

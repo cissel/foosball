@@ -47,7 +47,11 @@ from buildNflDraftStrategySim import (
     STARTERS, STRATEGIES, score_lineup, snake_order, tiebreak_score,
 )
 
-POS_COLORS = {"QB": "#7B4CE0", "RB": "#2E9E4E", "WR": "#2E7BE0", "TE": "#E0A02E", "-": "#DDDDDD"}
+POS_COLORS = {"QB": "#7B4CE0", "RB": "#2E9E4E", "WR": "#2E7BE0", "TE": "#E0A02E", "-": "#274066"}
+
+# Navy house theme, matches the R plots (BG=#02233F, TXT=white)
+BG = "#02233F"
+TXT = "white"
 
 
 def simulate_draft_logged(pool_df, strategy, user_slot):
@@ -155,6 +159,8 @@ def main():
     # ---- printable table: rounds down, strategies across, cell = position ----
     n_rounds_shown = min(12, N_ROUNDS)  # rounds 1-12 cover all starters + flex + early bench
     fig, ax = plt.subplots(figsize=(11, 0.42 * n_rounds_shown + 1.6))
+    fig.patch.set_facecolor(BG)
+    ax.set_facecolor(BG)
     ax.axis("off")
     col_labels = [s.upper().replace("_", " ") for s in strategy_order]
     row_labels = [f"Rd {r}" for r in range(1, n_rounds_shown + 1)]
@@ -168,7 +174,7 @@ def main():
             pct = pivot_pct.loc[r, s] if r in pivot_pct.index else 0
             pos = pos if isinstance(pos, str) else "-"
             row_text.append(f"{pos} ({pct:.0f}%)")
-            row_color.append(POS_COLORS.get(pos, "#FFFFFF"))
+            row_color.append(POS_COLORS.get(pos, BG))
         cell_text.append(row_text)
         cell_colors.append(row_color)
 
@@ -178,19 +184,26 @@ def main():
     table.auto_set_font_size(False)
     table.set_fontsize(10)
     table.scale(1, 1.8)
+    for (row, col), cell in table.get_celld().items():
+        cell.set_text_props(color=TXT)
+        cell.set_edgecolor("#274066")
+        if row == 0 or col == -1:
+            # header row / row-label column: matplotlib defaults these to a
+            # white cell background, which hides our white text - force navy.
+            cell.set_facecolor(BG)
 
     fig.suptitle("Room 40 - Draft Strategy Guide\n"
                   "Most common position picked each round, per strategy (12-slot simulation)\n"
                   "% = how many of the 12 draft slots agreed on that position",
-                  fontsize=13, fontweight="bold", y=0.995)
+                  fontsize=13, fontweight="bold", y=0.995, color=TXT)
     fig.text(0.5, 0.01,
               "CAVEAT: field model = non-adaptive best-ADP-available (doesn't react to runs). "
               "Low % rounds = strategy is flexible there, don't force it.",
-              ha="center", fontsize=8, style="italic", color="dimgray")
+              ha="center", fontsize=8, style="italic", color=TXT)
 
     plt.subplots_adjust(top=0.80, bottom=0.06)
     out_png = os.path.join(OUT_DIR, "strategy_guide.png")
-    plt.savefig(out_png, dpi=130, bbox_inches="tight")
+    plt.savefig(out_png, dpi=130, bbox_inches="tight", facecolor=BG)
     plt.close()
     print(f"Wrote: {out_png}")
 
