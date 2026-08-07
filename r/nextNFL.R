@@ -1,0 +1,23 @@
+# nextNFL.R by JHCV
+
+##### Required Packages #####
+
+library(tidyverse)
+library(nflfastR)
+
+#####
+
+# pull schedule
+sched <- fast_scraper_schedules(2026)
+
+# filter upcoming games
+fut <- sched |> subset(as.Date(gameday) >= today())
+
+# select next game only
+nextGame <- fut |> head(1)
+
+# add countdown
+nextGame$daysUntil <- as.Date(nextGame$gameday)-today()
+
+# write csv to output folder
+write_csv(nextGame, "~/foosball/outputs/nextGame.csv")
