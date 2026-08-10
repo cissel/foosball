@@ -1,205 +1,184 @@
 # foosball
 
-NFL and fantasy football data tools. Two parts: classic NFL analytics plots (R, standalone) and a full fantasy football "moneyball" pipeline for Room 40 (Python + R, VORP/ADP draft prep, live draft tools, projections).
+NFL/fantasy football data tools. Two independent parts:
+1. Standalone NFL analytics plots (R).
+2. Fantasy "moneyball" pipeline for Room 40 (Python + R): VORP/ADP draft prep, projections, live draft tools.
 
-All scripts assume this repo is cloned to `~/foosball`. Outputs write to `outputs/`, trained models to `models/`.
+Repo assumed cloned to `~/foosball`. Outputs write to `outputs/`, trained models to `models/`.
 
 ---
 
 ## Setup
 
-**R**: tidyverse, nflreadr, nflfastR, ggplot2, patchwork, plotly, fflr, ggimage, ggthemes, httr, rvest, wdman, tidytext, jsonlite (per-script, see each file's library() calls).
+**R**: tidyverse, nflreadr, nflfastR, ggplot2, patchwork, plotly, fflr, ggimage, ggthemes, httr, rvest, wdman, tidytext, jsonlite (per-script, see each file's `library()` calls).
 
 **Python**: pandas, numpy, scipy, scikit-learn, lightgbm, matplotlib, plotly, dash, requests, joblib.
 
 ---
 
-## NFL Analytics (R, standalone scripts)
+## NFL Analytics (R, standalone)
 
-Not part of the fantasy pipeline. Each pulls its own data and can run independently.
+Independent of the fantasy pipeline. Each script fetches its own data.
 
-### `r/epaMap.R`
-![EPA Map](images/epaMap.png)
-Team offense vs defense EPA per play, full season, plotted as a 2D scatter with team logos. Top-right teams are good on both sides of the ball. Best single-image "who's actually good" gut check, since EPA per play strips out garbage-time counting stats.
-
-### `r/nflQbStats.R`
-![QB Stats](images/nflQbStats.png)
-CPOE (completion % over expected) vs aggressiveness scatter for QBs. High CPOE means accurate beyond what the throw difficulty predicts. High aggressiveness means throwing into tighter windows. Top-right quadrant is the rare accurate-and-aggressive passer.
-
-### `r/nflRbStats.R`
-![RB Stats](images/nflRbStats.png)
-Rush yards over expected (RYOE) scatter for RBs, from NFL Next Gen Stats. Isolates a back's own contribution from the yards his offensive line created (expected yards is a per-play model based on defenders in the box, blocking, etc).
-
-### `r/nflWrStats.R`
-![WR Stats](images/nflWrStats.png)
-Advanced WR receiving leaderboard: separation, YAC over expected, target share. Shows who wins from route-running/tracking skill versus who wins from raw target volume.
-
-### `r/nflTeStats.R`
-![TE Stats](images/nflTeStats.png)
-Same as WR stats, filtered to TE. TEs get compared to a different baseline than WRs since role and target rate differ a lot by position.
-
-### `r/nflOlStats.R`
-![OL Stats](images/nflOlStats.png)
-Pressure rate vs sack rate scatter for offensive linemen (pass-block reps only). Bottom-left is the good corner: pressures allowed and sacks allowed both low.
-
-### `r/room40map.R`
-![Room 40 Map](images/room40map.png)
-League standings/roster visualization pulled live from the Sleeper API for league 1259616442014244864 (Room 40).
-
-### `r/targetShare.R`
-![Target Share](images/tgtShr.png)
-Target share breakdown by player/team from full-season play-by-play. Useful for spotting who's actually the WR1 in a given offense versus who has the name recognition.
-
-### `r/scorekeepe.R`
-![Fantasy Scoreboard](images/fantasyScoreboard.png)
-Weekly Room 40 fantasy scoreboard, pulled from Sleeper. Reads `outputs/sleeper_proj_pts.csv` and `outputs/players.json` (both fetched by other scripts in this repo).
-
-### `r/nflPlaye.R`
-Pulls the full Sleeper NFL player directory to `outputs/players.json`. Utility script, feeds `room40map.R` and `scorekeepe.R`.
-
-### `r/nextNFL.R`
-Pulls the next upcoming NFL game from the season schedule with a countdown. Small utility, no plot.
+| Script | Output | Metric |
+|---|---|---|
+| `r/epaMap.R` | ![EPA Map](images/epaMap.png) | Offense EPA/play vs defense EPA/play, full season. Top-right = good on both sides of the ball. |
+| `r/nflQbStats.R` | ![QB Stats](images/nflQbStats.png) | CPOE vs aggressiveness. Top-right = accurate + aggressive. |
+| `r/nflRbStats.R` | ![RB Stats](images/nflRbStats.png) | Rush yards over expected (NGS), isolates back's contribution from O-line. |
+| `r/nflWrStats.R` | ![WR Stats](images/nflWrStats.png) | Separation, YAC over expected, target share. Route-running skill vs volume. |
+| `r/nflTeStats.R` | ![TE Stats](images/nflTeStats.png) | Same as WR stats, TE-specific baseline. |
+| `r/nflOlStats.R` | ![OL Stats](images/nflOlStats.png) | Pressure rate vs sack rate, pass-block reps only. Bottom-left = best. |
+| `r/room40map.R` | ![Room 40 Map](images/room40map.png) | Live Room 40 standings/roster viz, Sleeper API (league `1259616442014244864`). |
+| `r/targetShare.R` | ![Target Share](images/tgtShr.png) | Target share by player/team, full-season play-by-play. |
+| `r/scorekeepe.R` | ![Fantasy Scoreboard](images/fantasyScoreboard.png) | Weekly Room 40 scoreboard. Reads `outputs/sleeper_proj_pts.csv`, `outputs/players.json`. |
+| `r/nflPlaye.R` | — | Utility: Sleeper NFL player directory → `outputs/players.json`. Feeds `room40map.R`, `scorekeepe.R`. |
+| `r/nextNFL.R` | — | Utility: next scheduled NFL game, countdown. No plot. |
 
 ---
 
 ## Fantasy Moneyball Pipeline
 
-Room 40 league settings: 12 teams, full PPR, QB/RB/RB/WR/WR/TE/FLEX/K/DEF/BN x5, no keepers. Built to answer "who do I draft and when" with data instead of gut feel, same rigor as the SPY trading model (VORP instead of raw projections, empirical league splits instead of assumed ones, leakage-safe time-based train/val splits).
+Room 40 settings: 12 teams, full PPR, QB/RB/RB/WR/WR/TE/FLEX/K/DEF/BN x5, no keepers.
 
-Pipeline runs in phases. Later phases depend on earlier phases' output files.
+Objective: rank draft value from data, not gut feel. VORP over raw projections, empirical league splits over assumed ones, leakage-safe time-based train/val splits (same standard as the SPY trading model).
+
+Phases run in order; each depends on the prior phase's output files.
 
 ### Phase 1: Feature building (R)
 
-- **`r/fetchNflCareerData.R`**: builds the player-season panel with Room 40's exact scoring rules applied to raw nflverse stats. Output: `outputs/fantasy/career_panel.csv`.
-- **`r/fetchNflSnapShare.R`**: snap share + target share per player-season. Separates "starter getting real volume" from "name-value backup."
-- **`r/fetchNflSchemeFeatures.R`**: team-season play-calling tendency (pass rate over expected, pace).
-- **`r/mergeNflCoachingStaff.R`**: merges coaching staff history into one team/season table.
-- **`r/buildNflCoachSignature.R`**: builds a coach-level scheme signature that follows a coordinator across team changes (rather than resetting to league-average when a team hires someone new).
-- **`r/mergeNflPhase1Features.R`**: joins usage features with coach scheme signature into the complete Phase 1 feature table.
-- **`r/nflPhase1Diagnostics.R`**
-  ![Phase 1 Diagnostics](images/phase1_diagnostics.png)
-  4-panel sanity check on the Phase 1 feature build before modeling. Confirms the pipeline isn't quietly broken before spending time training on it.
+| Script | Output | Function |
+|---|---|---|
+| `r/fetchNflCareerData.R` | `outputs/fantasy/career_panel.csv` | Player-season panel, Room 40 scoring rules applied to nflverse stats. |
+| `r/fetchNflSnapShare.R` | — | Snap share + target share per player-season. Separates starter volume from name-value backup. |
+| `r/fetchNflSchemeFeatures.R` | — | Team-season play-calling tendency (pass rate over expected, pace). |
+| `r/mergeNflCoachingStaff.R` | — | Coaching staff history, team/season table. |
+| `r/buildNflCoachSignature.R` | — | Coach-level scheme signature, persists across team changes (no reset to league-average on a coordinator hire). |
+| `r/mergeNflPhase1Features.R` | — | Joins usage features + coach signature → complete Phase 1 table. |
+| `r/nflPhase1Diagnostics.R` | ![Phase 1 Diagnostics](images/phase1_diagnostics.png) | 4-panel sanity check before modeling. |
 
 ### Phase 2: Projection model (Python + R)
 
-- **`python/trainNflFantasyModel.py`**: trains the season-long fantasy point model (Ridge + LightGBM per position). Time-based train/val split, never random, since this is a time series problem.
-- **`python/buildNflFlexSplit.py`**: derives Room 40's real FLEX slot allocation (RB/WR/TE) from actual historical scoring rather than guessing. Came out ~95% WR / 5% RB / 0% TE in a full-PPR league, replacing a stale hardcoded assumption.
-- **`r/nflPhase2Diagnostics.R`**
-  ![Phase 2 Diagnostics](images/phase2_model_diagnostics.png)
-  5-panel model diagnostic: actual vs predicted by position, residuals, feature importance, Spearman comparison, MAE by position. Read this before trusting any projection number.
-- **`python/buildNflAgingCurve.py`**
-  ![Aging Curves](images/aging_curves.png)
-  Position-specific career aging curves using the delta method (tracks each player's own year-over-year change, not a cross-sectional average, which avoids survivorship bias from only good old players still being in the league). Shows when a position typically peaks and declines.
+| Script | Output | Function |
+|---|---|---|
+| `python/trainNflFantasyModel.py` | — | Season-long fantasy point model, Ridge + LightGBM per position. Time-based train/val split (never random — this is a time series). |
+| `python/buildNflFlexSplit.py` | — | Empirical FLEX allocation (RB/WR/TE) from actual scoring history. Room 40 result: ~95% WR / 5% RB / 0% TE, full PPR. Replaces a stale hardcoded assumption. |
+| `r/nflPhase2Diagnostics.R` | ![Phase 2 Diagnostics](images/phase2_model_diagnostics.png) | 5-panel model diagnostic: actual vs predicted by position, residuals, feature importance, Spearman, MAE by position. |
+| `python/buildNflAgingCurve.py` | ![Aging Curves](images/aging_curves.png) | Position-specific aging curves, delta method (tracks each player's own YoY change; avoids survivorship bias vs cross-sectional averaging). |
 
 ### Phase 3: 2026 projections + VORP (Python)
 
-- **`python/fetchNflAdpAndRoster.py`**: pulls current ADP from Sleeper.
-- **`python/buildNfl2026Projections.py`**: applies the Phase 2 model to every player with current ADP, using real 2025 usage as input.
-- **`python/buildNflVorp.py`**: the core "moneyball" layer. Converts projections to Value Over Replacement Player using Room 40's actual roster math and empirical FLEX split, then joins ADP to surface market inefficiencies (good value relative to where players are actually being drafted).
-- **`r/nflPhase3Diagnostics.R`**
-  ![Phase 3 VORP Diagnostics](images/phase3_vorp_diagnostics.png)
-  4-panel check on the VORP/ADP layer before using it to draft.
+| Script | Output | Function |
+|---|---|---|
+| `python/fetchNflAdpAndRoster.py` | — | Current ADP from Sleeper. |
+| `python/buildNfl2026Projections.py` | — | Applies Phase 2 model to every ADP'd player, using real 2025 usage as input. |
+| `python/buildNflVorp.py` | `outputs/fantasy/vorp_2026.csv` | Core moneyball layer: projections → Value Over Replacement Player (Room 40 roster math + empirical FLEX split), joined to ADP to surface market inefficiencies. |
+| `r/nflPhase3Diagnostics.R` | ![Phase 3 VORP Diagnostics](images/phase3_vorp_diagnostics.png) | 4-panel check on the VORP/ADP layer. |
 
 ### Phase 4: Draft day tools (Python)
 
-- **`python/buildNflDraftBoard.py`**
-  ![Draft Board](images/draft_board_2026.png)
-  Tiered cheat sheet, one column per position. Tiers come from real gaps in projected value (1D KMeans on VORP), not arbitrary round cutoffs. Breakout candidates are starred.
-- **`python/buildNflBigBoard.py`**
-  ![Big Board](images/big_board_2026.png)
-  Same data as the draft board but flattened into one position-agnostic ranked list. Use this if you just want "who's next" regardless of position.
-- **`python/nflDraftLive.py`**: tracks who's been drafted during a live draft so the board always shows best-available. JSON state file, no UI.
-- **`python/buildNflPositionalScarcity.py`**
-  ![Positional Scarcity](images/positional_scarcity.png)
-  Shows, round by round, which position has the steepest value cliff coming up. A big drop means that position is scarce and worth reaching for now; a flat line means it's safe to wait.
-- **`python/buildNflDraftStrategySim.py`**
-  ![Draft Strategy Simulation](images/draft_strategy_sim.png)
-  Simulates full 12-team snake drafts under named strategies (zero RB, hero RB, robust RB, balanced, best-player-available) and scores each by the resulting STARTING LINEUP's total VORP, not just total value drafted (bench depth you can't start doesn't count). Answers which strategy actually wins.
-- **`python/buildNflStrategyGuide.py`**
-  ![Strategy Guide](images/strategy_guide.png)
-  Turns the strategy sim into a round-by-round printable card: "if I'm running zero RB, what position do I actually take in round 4."
-- **`python/nflMockDraftLog.py`**: grades a completed Sleeper mock draft against the VORP board and logs it so multiple mocks can be compared.
-- **`python/nflDraftWatch.py`**: live CLI draft assistant. Polls a real Sleeper draft (mock or real) and prints pick recommendations ranked by marginal starting-lineup VORP gain after every pick.
-- **`python/nflDraftDashboard.py`**
-  ![Live Draft Dashboard](images/nflDraftDashboard.png)
-  Browser UI version of the draft watcher (Dash/Plotly). Same recommendation engine as the CLI watcher, meant to run on your laptop next to the Sleeper tab during a live draft.
-
-### Live draft tools: quick start (no coding experience needed)
-
-Both `nflDraftWatch.py` (plain text in a terminal) and `nflDraftDashboard.py` (a webpage) watch a Sleeper draft in real time and tell you who to pick. Everything runs on your own laptop, nothing is uploaded anywhere. Pick whichever one sounds friendlier — the dashboard looks nicer, the CLI watcher is a little more lightweight.
-
-**Before you start:** these tools need a `vorp_2026.csv` file (the actual player rankings/model output) sitting in `outputs/fantasy/` inside this folder. That file isn't included in the download since it's the output of the whole modeling pipeline, not source code. Ask James to send you his `outputs/fantasy` folder (zip it up, share via Discord/Drive/USB, whatever's easiest) and drop it into your copy of the repo before running anything below.
-
-**One-time setup (5 minutes):**
-
-1. Install Python from [python.org](https://www.python.org/downloads/) if you don't already have it (Windows/Mac installer, just click through the defaults). On the install screen, check the box that says "Add Python to PATH."
-2. Download this repo: click the green "Code" button on the GitHub page, then "Download ZIP," and unzip it somewhere you'll remember (like your Desktop).
-3. Open a terminal in that folder:
-   - **Windows**: open the unzipped folder in File Explorer, click the address bar, type `cmd`, hit Enter.
-   - **Mac**: open Terminal, type `cd ` (with a space), drag the unzipped folder into the terminal window, hit Enter.
-4. Install the required packages (copy/paste this whole line, hit Enter, wait for it to finish):
-   ```
-   pip install pandas numpy requests matplotlib scikit-learn dash plotly
-   ```
-
-**Find your draft ID:**
-
-Open your Sleeper mock or real draft in a browser. Look at the URL, it'll look something like:
-```
-https://sleeper.com/draft/nfl/1234567890123456789
-```
-The long number at the end is your draft ID. Copy it.
-
-**Find your draft slot:**
-
-This is just which pick number you go in round 1 (e.g. if you pick 5th, your slot is `5`).
-
-**Run the CLI watcher:**
-```
-python python/nflDraftWatch.py 1234567890123456789 5
-```
-(replace the number with your draft ID and `5` with your slot). Leave this terminal window open during the draft — it'll print new picks and your recommendations automatically every few seconds. Press Ctrl+C to stop it when the draft ends.
-
-Example output when it's your turn:
-```
-[14:32:07] Pick #34 is up next (slot 10).
->>> YOUR TURN NOW <<<
-Your roster so far (2 picks): Amon-Ra St. Brown (WR), Omarion Hampton (RB)
-Still need: QB (0/1), RB (1/2), WR (1/2), TE (0/1)
-
-Top 8 recommendations right now (by marginal starting-lineup VORP gain):
-        full_name position team  adp_overall       vorp  value_gap  marginal_gain
-       Drake Maye       QB   NE        101.0 138.400604      100.0          138.4
-      Chris Olave       WR   NO         38.0  88.806879       29.0           88.8
-           Bo Nix       QB  DEN        105.0  67.374755       88.0           67.4
-```
-`marginal_gain` is the number that matters — it's how much your BEST STARTING LINEUP improves if you draft that specific player right now, not just their raw stat value. Higher is better.
-
-**Run the dashboard instead (nicer visuals):**
-```
-python python/nflDraftDashboard.py 1234567890123456789 5
-```
-Then open a web browser and go to `http://127.0.0.1:8877` — that's a page only your own computer can see, nobody else on the internet can reach it. Leave the terminal window open in the background while you use the dashboard in your browser; closing the terminal shuts the dashboard down. Refresh the page any time to see it re-poll the draft.
-
-**Troubleshooting:**
-- `command not found: python` → try `python3` instead of `python` in the commands above.
-- Nothing happens / hangs at "Draft not started yet" → the draft hasn't begun on Sleeper's end yet, or you've got the wrong draft ID. Double check the URL.
-- `ModuleNotFoundError` → you missed the `pip install` step above, or need to re-run it.
+| Script | Output | Function |
+|---|---|---|
+| `python/buildNflDraftBoard.py` | ![Draft Board](images/draft_board_2026.png) | Tiered cheat sheet, one column per position. Tiers from 1D KMeans on VORP (real value gaps, not arbitrary round cutoffs). Breakout candidates starred. |
+| `python/buildNflBigBoard.py` | ![Big Board](images/big_board_2026.png) | Same data, flattened to one position-agnostic ranked list. |
+| `python/nflDraftLive.py` | — | Tracks drafted players during a live draft; board shows best-available. JSON state file, no UI. |
+| `python/buildNflPositionalScarcity.py` | ![Positional Scarcity](images/positional_scarcity.png) | Round-by-round value cliff by position. Steep drop = scarce, reach now; flat = safe to wait. |
+| `python/buildNflDraftStrategySim.py` | ![Draft Strategy Simulation](images/draft_strategy_sim.png) | Simulates 12-team snake drafts under named strategies (zero RB, hero RB, robust RB, balanced, BPA). Scores by resulting STARTING LINEUP VORP, not total value drafted. |
+| `python/buildNflStrategyGuide.py` | ![Strategy Guide](images/strategy_guide.png) | Strategy sim → round-by-round printable card. |
+| `python/nflMockDraftLog.py` | — | Grades a completed Sleeper mock against the VORP board; logs for cross-mock comparison. |
+| `python/nflDraftWatch.py` | — | Live CLI draft assistant. Polls a Sleeper draft, prints pick recommendations ranked by marginal starting-lineup VORP gain after every pick. |
+| `python/nflDraftDashboard.py` | ![Live Draft Dashboard](images/nflDraftDashboard.png) | Browser UI (Dash/Plotly) on the same recommendation engine as the CLI watcher. Runs on your own machine alongside the Sleeper tab. Supports switching drafts live via an in-page URL input — no restart between mocks. Pairable with the Chrome extension in `chrome-extension/` (see setup guide below). |
 
 ### Phase 5: Breakout candidates + rookies (Python + R)
 
-- **`r/fetchNflBreakoutSignals.R`**: pulls raw signal inputs (efficiency, usage trend) for 2nd/3rd-year breakout scoring.
-- **`python/buildNflBreakoutScore.py`**: composite z-scored breakout score for young skill players. Flags candidates who haven't "arrived" yet by finishing production but show strong underlying signals.
-- **`r/fetchNflRookieData.R`**: draft capital + combine testing for rookies with no NFL usage history.
-- **`python/buildNflRookieLandingSpot.py`**: measures how much target/snap share is vacated on a rookie's new team, since a clear path to touches matters independent of talent.
-- **`python/buildNflRookieTrainingPanel.py`** / **`python/trainNflRookieModel.py`**: separate small-sample model (Ridge only) predicting rookie-year points from draft capital, combine, and landing spot, since rookies have no prior-year usage for the main model.
-- **`python/scoreNfl2026Rookies.py`**: scores the incoming rookie class with the rookie prior model.
+| Script | Output | Function |
+|---|---|---|
+| `r/fetchNflBreakoutSignals.R` | — | Raw signal inputs (efficiency, usage trend) for 2nd/3rd-year breakout scoring. |
+| `python/buildNflBreakoutScore.py` | — | Composite z-scored breakout score for young skill players — strong underlying signal, production hasn't caught up yet. |
+| `r/fetchNflRookieData.R` | — | Draft capital + combine testing, rookies with no NFL usage history. |
+| `python/buildNflRookieLandingSpot.py` | — | Vacated target/snap share on a rookie's new team — clear path to touches, independent of talent. |
+| `python/buildNflRookieTrainingPanel.py` / `python/trainNflRookieModel.py` | — | Small-sample rookie-year model (Ridge only): draft capital + combine + landing spot. No prior-year usage available for the main model. |
+| `python/scoreNfl2026Rookies.py` | — | Scores the incoming rookie class with the rookie prior model. |
+
+---
+
+## Live Draft Tools: Setup Guide (for friends hosting their own copy)
+
+Two live-draft tools, both poll a Sleeper draft and recommend picks in real time. Runs entirely on your own machine — nothing uploaded anywhere.
+
+- `nflDraftWatch.py` — plain-text terminal output.
+- `nflDraftDashboard.py` — browser dashboard, pairs with the Chrome extension for a pinned side panel next to your Sleeper draft tab.
+
+### 1. Prerequisites
+
+1. Install Python from [python.org](https://www.python.org/downloads/) (Windows/Mac installer, defaults are fine). On Windows, check "Add Python to PATH."
+2. Download this repo: GitHub → green "Code" button → "Download ZIP" → unzip.
+3. Open a terminal in the unzipped folder:
+   - **Windows**: File Explorer → address bar → type `cmd` → Enter.
+   - **Mac**: Terminal → `cd ` (with trailing space) → drag the folder in → Enter.
+4. Install dependencies:
+   ```
+   pip install pandas numpy requests plotly dash
+   ```
+5. Get `vorp_2026.csv` from James (it's the pipeline's model output, not source code — not included in the repo download). Place it at `outputs/fantasy/vorp_2026.csv` inside your copy.
+
+### 2. Find your draft ID and slot
+
+- **Draft ID**: open your Sleeper draft, copy the number from the URL — `https://sleeper.com/draft/nfl/`**`1234567890123456789`**.
+- **Slot**: your pick position in round 1 (e.g. pick 5th → slot `5`).
+
+### 3a. CLI watcher
+
+```
+python python/nflDraftWatch.py 1234567890123456789 5
+```
+Leave the terminal open during the draft; it polls and prints recommendations automatically. `Ctrl+C` to stop.
+
+```
+[14:32:07] Pick #34 is up next (slot 10).
+>>> YOUR TURN NOW <<<
+Still need: QB (0/1), RB (1/2), WR (1/2), TE (0/1)
+
+Top 8 recommendations right now (by marginal starting-lineup VORP gain):
+       full_name position team  adp_overall       vorp  value_gap  marginal_gain
+      Drake Maye       QB   NE        101.0 138.400604      100.0          138.4
+```
+`marginal_gain` = improvement to your BEST STARTING LINEUP if you draft that player now. Higher is better.
+
+### 3b. Dashboard + Chrome extension
+
+**Start the dashboard:**
+```
+python python/nflDraftDashboard.py --port 8877
+```
+No draft ID/slot needed at launch — the app starts blank and stays running across every mock draft. Leave the terminal open; closing it stops the dashboard.
+
+**Install the extension (one-time):**
+1. Chrome → `chrome://extensions` → enable **Developer mode** (top right).
+2. **Load unpacked** → select `chrome-extension/live-draft-sidepanel` inside your unzipped repo.
+3. Click the extension's toolbar icon — opens a pinned side panel next to any tab, including your Sleeper draft.
+4. In the panel's top bar, enter `http://127.0.0.1:8877` and click **Save**. This persists across restarts.
+
+**Each draft:**
+1. In the dashboard (side panel or `http://127.0.0.1:8877` in a full tab), paste your draft ID/URL and slot into the input bar at top.
+2. Click **Load Draft**.
+3. To switch to a new mock, paste the new draft ID/slot and click **Load Draft** again — no restart required.
+
+**Running the dashboard on a different machine than your browser** (e.g. hosting on a home server, viewing from a laptop): start it with `--host 0.0.0.0` instead of the default `127.0.0.1`, then use that machine's LAN IP (e.g. `http://10.0.0.x:8877`) in the extension's URL bar instead of `127.0.0.1`. Only do this on a trusted home network — `0.0.0.0` accepts connections from any device that can reach that IP.
+
+### Troubleshooting
+
+| Symptom | Fix |
+|---|---|
+| `command not found: python` | Use `python3` instead of `python`. |
+| Stuck at "Draft not started yet" | Draft hasn't begun on Sleeper's end, or wrong draft ID — recheck the URL. |
+| `ModuleNotFoundError` | Re-run the `pip install` command from step 1.4. |
+| Extension side panel says "refused to connect" | Dashboard isn't running, or the URL in the panel doesn't match where it's actually listening (`127.0.0.1` vs a LAN IP — see above). |
 
 ---
 
 ## Notes
 
-- Scripts write to `outputs/` on first run; this directory is gitignored except for the example images in `images/`.
-- Trained models ship in `models/` (16 `.pkl` files, ~2MB) so the draft-day tools work out of the box without retraining.
-- Live draft tools (`nflDraftWatch.py`, `nflDraftDashboard.py`, `nflDraftLive.py`) need a real or mock Sleeper draft ID to run against.
+- `outputs/` populates on first run; gitignored except for example images in `images/`.
+- `models/` ships pretrained (16 `.pkl` files, ~2MB) — draft-day tools work out of the box, no retraining required.
+- Live draft tools (`nflDraftWatch.py`, `nflDraftDashboard.py`, `nflDraftLive.py`) require a real or mock Sleeper draft ID.
 - All plots use a dark navy theme (`#02233F` / `#1c2e4a`) for consistency across the repo.
