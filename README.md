@@ -103,10 +103,7 @@ Phases run in order; each depends on the prior phase's output files.
 
 ## Live Draft Tools: Setup Guide (for friends hosting their own copy)
 
-Two live-draft tools, both poll a Sleeper draft and recommend picks in real time. Runs entirely on your own machine — nothing uploaded anywhere.
-
-- `nflDraftWatch.py` — plain-text terminal output.
-- `nflDraftDashboard.py` — browser dashboard, pairs with the Chrome extension for a pinned side panel next to your Sleeper draft tab.
+`nflDraftDashboard.py` (browser dashboard) + a Chrome extension for a pinned side panel next to your Sleeper draft tab. Polls a Sleeper draft and recommends picks in real time. Runs entirely on your own machine — nothing uploaded anywhere.
 
 ### 1. Prerequisites
 
@@ -126,25 +123,7 @@ Two live-draft tools, both poll a Sleeper draft and recommend picks in real time
 - **Draft ID**: open your Sleeper draft, copy the number from the URL — `https://sleeper.com/draft/nfl/`**`1234567890123456789`**.
 - **Slot**: your pick position in round 1 (e.g. pick 5th → slot `5`).
 
-### 3a. CLI watcher
-
-```
-python python/nflDraftWatch.py 1234567890123456789 5
-```
-Leave the terminal open during the draft; it polls and prints recommendations automatically. `Ctrl+C` to stop.
-
-```
-[14:32:07] Pick #34 is up next (slot 10).
->>> YOUR TURN NOW <<<
-Still need: QB (0/1), RB (1/2), WR (1/2), TE (0/1)
-
-Top 8 recommendations right now (by marginal starting-lineup VORP gain):
-       full_name position team  adp_overall       vorp  value_gap  marginal_gain
-      Drake Maye       QB   NE        101.0 138.400604      100.0          138.4
-```
-`marginal_gain` = improvement to your BEST STARTING LINEUP if you draft that player now. Higher is better.
-
-### 3b. Dashboard + Chrome extension
+### 3. Start the dashboard + install the extension
 
 **Start the dashboard:**
 ```
