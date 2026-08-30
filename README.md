@@ -125,11 +125,11 @@ Phases run in order; each depends on the prior phase's output files.
 
 ### 3. Start the dashboard + install the extension
 
-**Start the dashboard:**
+**Start the dashboard** (no draft ID/slot needed at launch):
 ```
 python python/nflDraftDashboard.py --port 8877
 ```
-No draft ID/slot needed at launch — the app starts blank and stays running across every mock draft. Leave the terminal open; closing it stops the dashboard.
+The app starts blank and stays running across every mock draft. Leave the terminal open; closing it stops the dashboard.
 
 **Install the extension (one-time):**
 1. Chrome → `chrome://extensions` → enable **Developer mode** (top right).
@@ -138,9 +138,11 @@ No draft ID/slot needed at launch — the app starts blank and stays running acr
 4. In the panel's top bar, enter `http://127.0.0.1:8877` and click **Save**. This persists across restarts.
 
 **Each draft:**
-1. In the dashboard (side panel or `http://127.0.0.1:8877` in a full tab), paste your draft ID/URL and slot into the input bar at top.
+1. In the dashboard (side panel or `http://127.0.0.1:8877` in a full tab), paste your draft ID/URL and slot into the **Load Draft** bar at the top of the page.
 2. Click **Load Draft**.
 3. To switch to a new mock, paste the new draft ID/slot and click **Load Draft** again — no restart required.
+
+(You can still pass `<draft_id> <my_slot>` as CLI args at launch if you prefer — see `--help` — but they're optional; the in-page bar is the normal flow.)
 
 **Running the dashboard on a different machine than your browser** (e.g. hosting on a home server, viewing from a laptop): start it with `--host 0.0.0.0` instead of the default `127.0.0.1`, then use that machine's LAN IP (e.g. `http://10.0.0.x:8877`) in the extension's URL bar instead of `127.0.0.1`. Only do this on a trusted home network — `0.0.0.0` accepts connections from any device that can reach that IP.
 
@@ -149,6 +151,7 @@ No draft ID/slot needed at launch — the app starts blank and stays running acr
 | Symptom | Fix |
 |---|---|
 | `command not found: python` | Use `python3` instead of `python`. |
+| `error: draft_id and my_slot must be given together, or both omitted` | You passed one CLI arg but not the other — pass both, or neither and use the Load Draft bar instead. |
 | Stuck at "Draft not started yet" | Draft hasn't begun on Sleeper's end, or wrong draft ID — recheck the URL. |
 | `ModuleNotFoundError` | Re-run the `pip install` command from step 1.4. |
 | Extension side panel says "refused to connect" | Dashboard isn't running, or the URL in the panel doesn't match where it's actually listening (`127.0.0.1` vs a LAN IP — see above). |
