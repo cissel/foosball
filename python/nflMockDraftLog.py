@@ -42,13 +42,34 @@ FLEX_ELIGIBLE = {"RB", "WR", "TE"}
 SLEEPER_DRAFT_URL = "https://api.sleeper.app/v1/draft/{draft_id}"
 SLEEPER_PICKS_URL = "https://api.sleeper.app/v1/draft/{draft_id}/picks"
 
+# Shared session for all Sleeper API calls across the draft-day tools
+# (dashboard, CLI watcher, mock grader all import this). api.sleeper.app
+# sits behind Cloudflare - raw requests.get() with no headers announces
+# itself as User-Agent "python-requests/x.y.z" (an obvious bot signature)
+# and opens a fresh TCP/TLS connection every single call. That's mostly
+# harmless for a one-shot grade/lookup, but the live dashboard/watcher poll
+# this endpoint every ~8s for the length of an entire draft (or, since the
+# no-restart Load Draft feature landed, potentially many drafts back to
+# back in one long-running process) - sustained bot-fingerprinted traffic
+# from one IP can trip Cloudflare's IP-level bot-management/reputation
+# scoring for Sleeper's whole zone, which has been observed to also affect
+# that IP's browser WebSocket connection to the draft lobby (looks like
+# getting randomly booted from the room, correlated with poll cycles).
+# Fix: look like a normal browser + reuse one persistent connection.
+SLEEPER_SESSION = requests.Session()
+SLEEPER_SESSION.headers.update({
+    "User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                   "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"),
+    "Accept": "application/json",
+})
+
 
 class MockDraftError(Exception):
     pass
 
 
 def fetch_sleeper_draft(draft_id: str) -> dict:
-    r = requests.get(SLEEPER_DRAFT_URL.format(draft_id=draft_id), timeout=20)
+    r = SLEEPER_SESSION.get(SLEEPER_DRAFT_URL.format(draft_id=draft_id), timeout=20)
     r.raise_for_status()
     meta = r.json()
     if meta is None:
@@ -57,7 +78,7 @@ def fetch_sleeper_draft(draft_id: str) -> dict:
 
 
 def fetch_sleeper_picks(draft_id: str) -> list:
-    r = requests.get(SLEEPER_PICKS_URL.format(draft_id=draft_id), timeout=20)
+    r = SLEEPER_SESSION.get(SLEEPER_PICKS_URL.format(draft_id=draft_id), timeout=20)
     r.raise_for_status()
     picks = r.json()
     if not isinstance(picks, list):

@@ -81,10 +81,9 @@ import pandas as pd
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from nflMockDraftLog import (
-    FLEX_ELIGIBLE, STARTERS, MockDraftError, fetch_sleeper_draft, load_id_bridge,
+    FLEX_ELIGIBLE, STARTERS, MockDraftError, SLEEPER_SESSION, fetch_sleeper_draft, load_id_bridge,
     load_vorp_board, match_player, score_starting_lineup,
 )
-import requests
 
 SLEEPER_PICKS_URL = "https://api.sleeper.app/v1/draft/{draft_id}/picks"
 SUFFIXES = re.compile(r"\b(jr|sr|ii|iii|iv|v)\.?\s*$", re.IGNORECASE)
@@ -165,7 +164,7 @@ def fetch_picks_tolerant(draft_id: str) -> list:
     not a fatal error - a live watcher polls before the draft starts and
     between individual picks, so an empty list is expected and routine,
     unlike the grading tool where it means something is actually wrong."""
-    r = requests.get(SLEEPER_PICKS_URL.format(draft_id=draft_id), timeout=20)
+    r = SLEEPER_SESSION.get(SLEEPER_PICKS_URL.format(draft_id=draft_id), timeout=20)
     r.raise_for_status()
     picks = r.json()
     if not isinstance(picks, list):
