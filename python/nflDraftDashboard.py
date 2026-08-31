@@ -69,7 +69,7 @@ from dash import Dash, dcc, html, dash_table, Input, Output, State, ctx, no_upda
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from nflMockDraftLog import (
-    FLEX_ELIGIBLE, STARTERS, fetch_sleeper_draft, load_id_bridge,
+    FLEX_ELIGIBLE, STARTERS, MockDraftError, fetch_sleeper_draft, load_id_bridge,
     load_vorp_board, match_player, score_starting_lineup,
 )
 from nflDraftWatch import (
@@ -370,11 +370,30 @@ def df_to_table_records(df, cols):
 
 
 def build_app(initial_draft_id, initial_slot, poll_seconds):
-    vorp_df_base = load_vorp_board()
-    vorp_df_base = vorp_df_base[vorp_df_base["adp_overall"] <= ADP_CAP].copy()
-    vorp_df_base = load_draft_context(vorp_df_base)
-    vorp_df_base["norm_name"] = vorp_df_base["full_name"].map(norm_name)
-    match_player._id_bridge = load_id_bridge()
+    # vorp_2026.csv is the ONE file that isn't optional - everything else in
+    # this module degrades to "no data" gracefully (see load_ngs_exports,
+    # load_breakout_candidates, load_aging_curves, load_player_ages below,
+    # and load_draft_context in nflDraftWatch.py). A friend running this from
+    # a fresh clone without vorp_2026.csv (James sends it separately, see
+    # README) used to get a raw Python traceback here instead of a usable
+    # page - catch it and render a real error state in the browser instead.
+    vorp_load_error = None
+    try:
+        vorp_df_base = load_vorp_board()
+        vorp_df_base = vorp_df_base[vorp_df_base["adp_overall"] <= ADP_CAP].copy()
+        vorp_df_base = load_draft_context(vorp_df_base)
+        vorp_df_base["norm_name"] = vorp_df_base["full_name"].map(norm_name)
+        match_player._id_bridge = load_id_bridge()
+    except MockDraftError as e:
+        vorp_load_error = str(e)
+        vorp_df_base = pd.DataFrame(columns=["full_name", "position", "team", "adp_overall", "vorp", "norm_name"])
+        match_player._id_bridge = {}
+    except Exception as e:
+        # Any other failure reading/parsing the file (bad CSV, missing
+        # expected column, etc.) - same graceful path, different message.
+        vorp_load_error = f"Could not load vorp_2026.csv: {e}"
+        vorp_df_base = pd.DataFrame(columns=["full_name", "position", "team", "adp_overall", "vorp", "norm_name"])
+        match_player._id_bridge = {}
 
     ngs_exports = load_ngs_exports()
     breakout_df = load_breakout_candidates()
@@ -406,6 +425,19 @@ def build_app(initial_draft_id, initial_slot, poll_seconds):
         dcc.Store(id="active-draft", data=initial_active),
 
         html.H2(id="dashboard-title", style={"color": TXT, "marginBottom": "4px"}),
+        html.Div(
+            f"\u26a0 {vorp_load_error}  \u2014  Ask James for vorp_2026.csv and drop it at "
+            "outputs/fantasy/vorp_2026.csv, then restart the dashboard. Nothing else on this "
+            "page will work until that file is in place."
+            if vorp_load_error else "",
+            id="vorp-load-error-banner",
+            style={
+                "display": "block" if vorp_load_error else "none",
+                "color": "#ffffff", "backgroundColor": ACCENT_BAD, "padding": "12px 16px",
+                "borderRadius": "6px", "marginBottom": "12px", "fontWeight": "bold",
+                "border": f"1px solid {GRID}",
+            },
+        ),
         html.Div(style={"display": "flex", "gap": "10px", "alignItems": "center", "flexWrap": "wrap",
                          "marginBottom": "10px", "padding": "10px", "backgroundColor": PANEL,
                          "borderRadius": "6px", "border": f"1px solid {GRID}"}, children=[
@@ -506,6 +538,10 @@ def build_app(initial_draft_id, initial_slot, poll_seconds):
         prevent_initial_call=True,
     )
     def on_load_draft(_n, raw_draft_id, slot_value):
+        if vorp_load_error:
+            return no_update, html.Span(
+                "Can't load a draft \u2014 vorp_2026.csv is missing/broken (see banner above).",
+                style={"color": ACCENT_BAD})
         raw_draft_id = (raw_draft_id or "").strip()
         if not raw_draft_id or not slot_value:
             return no_update, html.Span("Enter a draft ID/URL and slot.", style={"color": ACCENT_WARN})
@@ -574,8 +610,8 @@ def build_app(initial_draft_id, initial_slot, poll_seconds):
         n_picks_made = len(picks)
         done = n_picks_made >= total_picks_expected
         next_pick_no = n_picks_made + 1
-        next_slot = None if done else predict_next_slot(next_pick_no, n_teams)
-        distance = None if done else picks_until_my_turn(next_pick_no, my_slot, n_teams)
+        next_slot = None if done else predict_next_slot(next_pick_no, active["n_teams"])
+        distance = None if done else picks_until_my_turn(next_pick_no, my_slot, active["n_teams"])
 
         return {
             "drafted_names": list(drafted_names),

@@ -296,12 +296,21 @@ def main():
     args = ap.parse_args()
 
     draft_id = _extract_draft_id(args.draft_id)
-    vorp_df = load_vorp_board()
+    try:
+        vorp_df = load_vorp_board()
+    except MockDraftError as e:
+        print(f"ERROR: {e}\nAsk James for vorp_2026.csv and drop it at outputs/fantasy/vorp_2026.csv.")
+        sys.exit(1)
     vorp_df = vorp_df[vorp_df["adp_overall"] <= ADP_CAP].copy()
     vorp_df = load_draft_context(vorp_df)
     match_player._id_bridge = load_id_bridge()
 
-    meta = fetch_sleeper_draft(draft_id)
+    try:
+        meta = fetch_sleeper_draft(draft_id)
+    except Exception as e:
+        print(f"ERROR: could not reach Sleeper for draft '{draft_id}' - {e}\n"
+              "Check the draft ID/URL and your network connection.")
+        sys.exit(1)
     settings = meta.get("settings", {})
     n_teams = settings.get("teams", 12)
     n_rounds = settings.get("rounds", 15)

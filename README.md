@@ -6,6 +6,13 @@ NFL/fantasy football data tools. Two independent parts:
 
 Repo assumed cloned to `~/foosball`. Outputs write to `outputs/`, trained models to `models/`.
 
+> **Just here to run the live draft dashboard/Chrome extension for your own mock drafts?**
+> Skip everything below and go straight to **"Live Draft Tools: Setup Guide"** further down this
+> page. You do NOT need to run any of the Phase 1-5 scripts yourself — those build James's own
+> models from scratch (hours of data pulls) and require files he keeps locally, not in this repo.
+> The dashboard only needs one file from James (`vorp_2026.csv`) — the setup guide tells you
+> exactly what to ask him for.
+
 ---
 
 ## Setup
@@ -42,7 +49,7 @@ Room 40 settings: 12 teams, full PPR, QB/RB/RB/WR/WR/TE/FLEX/K/DEF/BN x5, no kee
 
 Objective: rank draft value from data, not gut feel. VORP over raw projections, empirical league splits over assumed ones, leakage-safe time-based train/val splits (same standard as the SPY trading model).
 
-Phases run in order; each depends on the prior phase's output files.
+Phases run in order; each depends on the prior phase's output files. **This section documents James's own pipeline for his reference — if you're a friend just setting up the live draft dashboard, you don't need any of this; jump to "Live Draft Tools: Setup Guide" below instead. Running Phase 1 yourself means pulling 27 seasons of nflverse play-by-play from scratch (`fetchNflCareerData.R` → `career_panel.csv`), which is not needed for the dashboard/extension.**
 
 ### Phase 1: Feature building (R)
 
@@ -116,7 +123,7 @@ Phases run in order; each depends on the prior phase's output files.
    ```
    pip install pandas numpy requests plotly dash
    ```
-5. Get `vorp_2026.csv` from James (it's the pipeline's model output, not source code — not included in the repo download). Place it at `outputs/fantasy/vorp_2026.csv` inside your copy.
+5. Get `vorp_2026.csv` from James (it's the pipeline's model output, not source code — not included in the repo download). Place it at `outputs/fantasy/vorp_2026.csv` inside your copy. **This is the only file you need from James — everything else the dashboard looks for (NGS stats, aging curves, breakout candidates, ADP volatility, etc.) is optional and degrades gracefully to "no data" if missing. If `vorp_2026.csv` itself is missing or corrupted, the dashboard will still start and show a red banner telling you exactly that instead of crashing — ask James to resend the file.**
 
 ### 2. Find your draft ID and slot
 

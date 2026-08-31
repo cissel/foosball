@@ -305,17 +305,24 @@ if __name__ == "__main__":
         sys.exit(1)
 
     cmd = sys.argv[1]
-    if cmd == "grade":
-        draft_id = sys.argv[2]
-        my_slot = int(sys.argv[3]) if len(sys.argv) > 3 else None
-        result = grade_draft(draft_id, my_slot=my_slot)
-        row_id = append_to_log(result, label=sys.argv[4] if len(sys.argv) > 4 else "")
-        print(f"Logged as id {row_id}")
-        print(json.dumps(result["ranking"], indent=2))
-        if result["n_unmatched"]:
-            print(f"\nWARNING: {result['n_unmatched']} picks unmatched to VORP board: "
-                  f"{result['unmatched_sample']}")
-    elif cmd == "list":
-        print(list_log().to_string(index=False))
-    elif cmd == "show":
-        print(json.dumps(load_detail(int(sys.argv[2])), indent=2))
+    try:
+        if cmd == "grade":
+            draft_id = sys.argv[2]
+            my_slot = int(sys.argv[3]) if len(sys.argv) > 3 else None
+            result = grade_draft(draft_id, my_slot=my_slot)
+            row_id = append_to_log(result, label=sys.argv[4] if len(sys.argv) > 4 else "")
+            print(f"Logged as id {row_id}")
+            print(json.dumps(result["ranking"], indent=2))
+            if result["n_unmatched"]:
+                print(f"\nWARNING: {result['n_unmatched']} picks unmatched to VORP board: "
+                      f"{result['unmatched_sample']}")
+        elif cmd == "list":
+            print(list_log().to_string(index=False))
+        elif cmd == "show":
+            print(json.dumps(load_detail(int(sys.argv[2])), indent=2))
+    except MockDraftError as e:
+        print(f"ERROR: {e}")
+        sys.exit(1)
+    except requests.exceptions.RequestException as e:
+        print(f"ERROR: could not reach Sleeper's API - {e}")
+        sys.exit(1)
