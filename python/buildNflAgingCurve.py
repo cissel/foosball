@@ -28,7 +28,8 @@ import numpy as np
 import pandas as pd
 from scipy.interpolate import UnivariateSpline
 
-OUT_DIR = os.path.expanduser("~/foosball/outputs/fantasy")
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+OUT_DIR = os.path.join(REPO_ROOT, "outputs", "fantasy")
 PANEL_PATH = os.path.join(OUT_DIR, "career_panel.csv")
 POSITIONS = ["QB", "RB", "WR", "TE"]
 

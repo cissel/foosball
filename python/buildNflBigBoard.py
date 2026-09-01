@@ -30,7 +30,8 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from sklearn.cluster import KMeans
 
-OUT_DIR = os.path.expanduser("~/foosball/outputs/fantasy")
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+OUT_DIR = os.path.join(REPO_ROOT, "outputs", "fantasy")
 ADP_CAP = 200  # matches buildNflVorp.py's draftable-range definition
 POSITIONS = ["QB", "RB", "WR", "TE"]
 POS_COLORS = {"QB": "#7B4CE0", "RB": "#2E9E4E", "WR": "#2E7BE0", "TE": "#E0A02E"}

@@ -77,8 +77,9 @@ from nflDraftWatch import (
     picks_until_my_turn, predict_next_slot, recommend, roster_needs_str,
 )
 
-OUT_DIR = os.path.expanduser("~/foosball/outputs/fantasy")
-NFL_OUT_DIR = os.path.expanduser("~/foosball/outputs")  # NGS export CSVs live here
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+OUT_DIR = os.path.join(REPO_ROOT, "outputs", "fantasy")
+NFL_OUT_DIR = os.path.join(REPO_ROOT, "outputs")  # NGS export CSVs live here
 
 # ── Navy theme (matches nflWrStats.R / buildNflDraftBoard.py) ──────────────
 BG = "#02233F"

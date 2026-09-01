@@ -38,9 +38,10 @@ import joblib
 
 warnings.filterwarnings("ignore", category=RuntimeWarning, message="Mean of empty slice")
 
-OUT_DIR = os.path.expanduser("~/foosball/outputs/fantasy")
-MODEL_DIR = os.path.expanduser("~/foosball/models")
-META_DIR = os.path.expanduser("~/foosball/models/meta")
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+OUT_DIR = os.path.join(REPO_ROOT, "outputs", "fantasy")
+MODEL_DIR = os.path.join(REPO_ROOT, "models")
+META_DIR = os.path.join(MODEL_DIR, "meta")
 os.makedirs(MODEL_DIR, exist_ok=True)
 os.makedirs(META_DIR, exist_ok=True)
 

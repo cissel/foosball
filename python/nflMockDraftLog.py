@@ -33,7 +33,8 @@ from datetime import datetime, timezone
 import pandas as pd
 import requests
 
-OUT_DIR = os.path.expanduser("~/foosball/outputs/fantasy")
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+OUT_DIR = os.path.join(REPO_ROOT, "outputs", "fantasy")
 VORP_PATH = os.path.join(OUT_DIR, "vorp_2026.csv")
 LOG_PATH = os.path.join(OUT_DIR, "mock_draft_log.csv")
 

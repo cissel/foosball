@@ -39,7 +39,8 @@ import os
 import numpy as np
 import pandas as pd
 
-OUT_DIR = os.path.expanduser("~/foosball/outputs/fantasy")
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+OUT_DIR = os.path.join(REPO_ROOT, "outputs", "fantasy")
 
 N_TEAMS = 12
 STARTERS = {"QB": 1, "RB": 2, "WR": 2, "TE": 1}

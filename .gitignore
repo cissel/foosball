@@ -1,5 +1,27 @@
-outputs/
+outputs/*
 !outputs/.gitkeep
+!outputs/fantasy/
+!outputs/ngs_wr_export.csv
+!outputs/ngs_te_export.csv
+!outputs/ngs_rb_export.csv
+!outputs/ngs_qb_export.csv
+outputs/fantasy/*
+# Small pre-built data files the live-draft dashboard/CLI/mock-grader read,
+# committed so a fresh clone works with zero manual file hand-off from James.
+# Excludes large/maintainer-only pipeline intermediates (nfl_phase1_features.csv
+# and friends) that only matter for retraining the models, not for running the
+# already-shipped draft-day tools.
+!outputs/fantasy/vorp_2026.csv
+!outputs/fantasy/draft_board_2026.csv
+!outputs/fantasy/breakout_candidates_2026.csv
+!outputs/fantasy/aging_curves.csv
+!outputs/fantasy/aging_curve_summary.csv
+!outputs/fantasy/adp_cross_platform_spread.csv
+!outputs/fantasy/adp_volatility.csv
+!outputs/fantasy/weekly_volatility_2025.csv
+!outputs/fantasy/weekly_volatility_kickers_2025.csv
+!outputs/fantasy/weekly_volatility_dst_2025.csv
+!outputs/fantasy/nfl_training_panel.csv
 __pycache__/
 *.pyc
 venv/

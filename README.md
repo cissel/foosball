@@ -9,9 +9,8 @@ Repo assumed cloned to `~/foosball`. Outputs write to `outputs/`, trained models
 > **Just here to run the live draft dashboard/Chrome extension for your own mock drafts?**
 > Skip everything below and go straight to **"Live Draft Tools: Setup Guide"** further down this
 > page. You do NOT need to run any of the Phase 1-5 scripts yourself — those build James's own
-> models from scratch (hours of data pulls) and require files he keeps locally, not in this repo.
-> The dashboard only needs one file from James (`vorp_2026.csv`) — the setup guide tells you
-> exactly what to ask him for.
+> models from scratch (hours of data pulls). The dashboard's data files (`vorp_2026.csv` and
+> friends) ship pre-built inside the repo download, so there's nothing extra to fetch.
 
 ---
 
@@ -123,7 +122,7 @@ Phases run in order; each depends on the prior phase's output files. **This sect
    ```
    pip install pandas numpy requests plotly dash
    ```
-5. Get `vorp_2026.csv` from James (it's the pipeline's model output, not source code — not included in the repo download). Place it at `outputs/fantasy/vorp_2026.csv` inside your copy. **This is the only file you need from James — everything else the dashboard looks for (NGS stats, aging curves, breakout candidates, ADP volatility, etc.) is optional and degrades gracefully to "no data" if missing. If `vorp_2026.csv` itself is missing or corrupted, the dashboard will still start and show a red banner telling you exactly that instead of crashing — ask James to resend the file.**
+That's it — `vorp_2026.csv` and the other data files the dashboard reads ship pre-built inside the repo download itself, so there's nothing else to fetch or ask James for.
 
 ### 2. Find your draft ID and slot
 
@@ -162,12 +161,13 @@ The app starts blank and stays running across every mock draft. Leave the termin
 | Stuck at "Draft not started yet" | Draft hasn't begun on Sleeper's end, or wrong draft ID — recheck the URL. |
 | `ModuleNotFoundError` | Re-run the `pip install` command from step 1.4. |
 | Extension side panel says "refused to connect" | Dashboard isn't running, or the URL in the panel doesn't match where it's actually listening (`127.0.0.1` vs a LAN IP — see above). |
+| Red banner: "vorp_2026.csv is missing/broken" | Shouldn't happen on a fresh clone (the file ships in the repo) — if you deleted/moved it, re-download the repo or restore `outputs/fantasy/vorp_2026.csv`. |
 
 ---
 
 ## Notes
 
-- `outputs/` populates on first run; gitignored except for example images in `images/`.
+- `outputs/` mostly populates on first run and is gitignored, EXCEPT the pre-built data files the live-draft dashboard needs (`vorp_2026.csv`, `draft_board_2026.csv`, ADP spread/volatility, 2025 weekly scoring volatility, aging curves, breakout candidates, NGS exports, ~1.1MB total) — those are committed so a fresh clone works immediately with every context column populated, no manual file hand-off required.
 - `models/` ships pretrained (16 `.pkl` files, ~2MB) — draft-day tools work out of the box, no retraining required.
 - Live draft tools (`nflDraftWatch.py`, `nflDraftDashboard.py`, `nflDraftLive.py`) require a real or mock Sleeper draft ID.
 - All plots use a dark navy theme (`#02233F` / `#1c2e4a`) for consistency across the repo.

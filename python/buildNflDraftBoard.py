@@ -40,7 +40,8 @@ import numpy as np
 import pandas as pd
 from sklearn.cluster import KMeans
 
-OUT_DIR = os.path.expanduser("~/foosball/outputs/fantasy")
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+OUT_DIR = os.path.join(REPO_ROOT, "outputs", "fantasy")
 ADP_CAP = 200  # matches buildNflVorp.py's draftable-range definition
 BREAKOUT_WATCH_TIER = 99  # sentinel tier for breakout candidates beyond ADP_CAP
 

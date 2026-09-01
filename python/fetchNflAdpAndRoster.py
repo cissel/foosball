@@ -33,7 +33,8 @@ from datetime import date
 import pandas as pd
 import requests
 
-OUT_DIR = os.path.expanduser("~/foosball/outputs/fantasy")
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+OUT_DIR = os.path.join(REPO_ROOT, "outputs", "fantasy")
 os.makedirs(OUT_DIR, exist_ok=True)
 HISTORY_PATH = os.path.join(OUT_DIR, "adp_history.csv")
 

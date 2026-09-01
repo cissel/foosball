@@ -18,8 +18,9 @@ import joblib
 import numpy as np
 import pandas as pd
 
-OUT_DIR = os.path.expanduser("~/foosball/outputs/fantasy")
-MODEL_DIR = os.path.expanduser("~/foosball/models")
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+OUT_DIR = os.path.join(REPO_ROOT, "outputs", "fantasy")
+MODEL_DIR = os.path.join(REPO_ROOT, "models")
 TEAM_MAP = {"LAR": "LA"}
 SUFFIXES = re.compile(r"\b(jr|sr|ii|iii|iv|v)\.?\s*$", re.IGNORECASE)
 
