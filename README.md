@@ -1,16 +1,68 @@
 # foosball
 
+## Live Draft Tools: Setup Guide (for friends hosting their own copy)
+
+`nflDraftDashboard.py` (browser dashboard) + a Chrome extension for a pinned side panel next to your Sleeper draft tab. Polls a Sleeper draft and recommends picks in real time. Runs entirely on your own machine — nothing uploaded anywhere.
+
+### 1. Prerequisites
+
+1. Install Python from [python.org](https://www.python.org/downloads/) (Windows/Mac installer, defaults are fine). On Windows, check "Add Python to PATH."
+2. Download this repo: GitHub → green "Code" button → "Download ZIP" → unzip.
+3. Open a terminal in the unzipped folder:
+   - **Windows**: File Explorer → address bar → type `cmd` → Enter.
+   - **Mac**: Terminal → `cd ` (with trailing space) → drag the folder in → Enter.
+4. Install dependencies:
+   ```
+   pip install pandas numpy requests plotly dash
+   ```
+That's it — `vorp_2026.csv` and the other data files the dashboard reads ship pre-built inside the repo download itself, so there's nothing else to fetch or ask James for.
+
+### 2. Start the dashboard + install the extension
+
+**Start the dashboard** (no draft ID/slot needed at launch):
+```
+python python/nflDraftDashboard.py --port 8877
+```
+The app starts blank and stays running across every mock draft. Leave the terminal open; closing it stops the dashboard.
+
+**Install the extension (one-time):**
+1. Chrome → `chrome://extensions` → enable **Developer mode** (top right).
+2. **Load unpacked** → select `chrome-extension/live-draft-sidepanel` inside your unzipped repo.
+3. Click the extension's toolbar icon — opens a pinned side panel next to any tab, including your Sleeper draft.
+4. In the panel's top bar, enter `http://127.0.0.1:8877` and click **Save**. This persists across restarts.
+
+**Each draft:**
+1. In the dashboard (side panel or `http://127.0.0.1:8877` in a full tab), paste your draft ID/URL and slot into the **Load Draft** bar at the top of the page.
+2. Click **Load Draft**.
+3. To switch to a new mock, paste the new draft ID/slot and click **Load Draft** again — no restart required.
+
+(You can still pass `<draft_id> <my_slot>` as CLI args at launch if you prefer — see `--help` — but they're optional; the in-page bar is the normal flow.)
+
+**Running the dashboard on a different machine than your browser** (e.g. hosting on a home server, viewing from a laptop): start it with `--host 0.0.0.0` instead of the default `127.0.0.1`, then use that machine's LAN IP (e.g. `http://10.0.0.x:8877`) in the extension's URL bar instead of `127.0.0.1`. Only do this on a trusted home network — `0.0.0.0` accepts connections from any device that can reach that IP.
+
+### 3. Find your draft ID and slot
+
+- **Draft ID**: open your Sleeper draft, copy the number from the URL — `https://sleeper.com/draft/nfl/`**`1234567890123456789`**.
+- **Slot**: your pick position in round 1 (e.g. pick 5th → slot `5`).
+
+### Troubleshooting
+
+| Symptom | Fix |
+|---|---|
+| `command not found: python` | Use `python3` instead of `python`. |
+| `error: draft_id and my_slot must be given together, or both omitted` | You passed one CLI arg but not the other — pass both, or neither and use the Load Draft bar instead. |
+| Stuck at "Draft not started yet" | Draft hasn't begun on Sleeper's end, or wrong draft ID — recheck the URL. |
+| `ModuleNotFoundError` | Re-run the `pip install` command from step 1.4. |
+| Extension side panel says "refused to connect" | Dashboard isn't running, or the URL in the panel doesn't match where it's actually listening (`127.0.0.1` vs a LAN IP — see above). |
+| Red banner: "vorp_2026.csv is missing/broken" | Shouldn't happen on a fresh clone (the file ships in the repo) — if you deleted/moved it, re-download the repo or restore `outputs/fantasy/vorp_2026.csv`. |
+
+---
+
 NFL/fantasy football data tools. Two independent parts:
 1. Standalone NFL analytics plots (R).
 2. Fantasy "moneyball" pipeline for Room 40 (Python + R): VORP/ADP draft prep, projections, live draft tools.
 
 Repo assumed cloned to `~/foosball`. Outputs write to `outputs/`, trained models to `models/`.
-
-> **Just here to run the live draft dashboard/Chrome extension for your own mock drafts?**
-> Skip everything below and go straight to **"Live Draft Tools: Setup Guide"** further down this
-> page. You do NOT need to run any of the Phase 1-5 scripts yourself — those build James's own
-> models from scratch (hours of data pulls). The dashboard's data files (`vorp_2026.csv` and
-> friends) ship pre-built inside the repo download, so there's nothing extra to fetch.
 
 ---
 
@@ -48,7 +100,7 @@ Room 40 settings: 12 teams, full PPR, QB/RB/RB/WR/WR/TE/FLEX/K/DEF/BN x5, no kee
 
 Objective: rank draft value from data, not gut feel. VORP over raw projections, empirical league splits over assumed ones, leakage-safe time-based train/val splits (same standard as the SPY trading model).
 
-Phases run in order; each depends on the prior phase's output files. **This section documents James's own pipeline for his reference — if you're a friend just setting up the live draft dashboard, you don't need any of this; jump to "Live Draft Tools: Setup Guide" below instead. Running Phase 1 yourself means pulling 27 seasons of nflverse play-by-play from scratch (`fetchNflCareerData.R` → `career_panel.csv`), which is not needed for the dashboard/extension.**
+Phases run in order; each depends on the prior phase's output files. **This section documents James's own pipeline for his reference — if you're a friend just setting up the live draft dashboard, you don't need any of this; jump to "Live Draft Tools: Setup Guide" above instead. Running Phase 1 yourself means pulling 27 seasons of nflverse play-by-play from scratch (`fetchNflCareerData.R` → `career_panel.csv`), which is not needed for the dashboard/extension.**
 
 ### Phase 1: Feature building (R)
 
@@ -92,7 +144,7 @@ Phases run in order; each depends on the prior phase's output files. **This sect
 | `python/buildNflStrategyGuide.py` | ![Strategy Guide](images/strategy_guide.png) | Strategy sim → round-by-round printable card. |
 | `python/nflMockDraftLog.py` | — | Grades a completed Sleeper mock against the VORP board; logs for cross-mock comparison. |
 | `python/nflDraftWatch.py` | — | Live CLI draft assistant. Polls a Sleeper draft, prints pick recommendations ranked by marginal starting-lineup VORP gain after every pick. |
-| `python/nflDraftDashboard.py` | ![Live Draft Dashboard](images/nflDraftDashboard.png) | Browser UI (Dash/Plotly) on the same recommendation engine as the CLI watcher. Runs on your own machine alongside the Sleeper tab. Supports switching drafts live via an in-page URL input — no restart between mocks. Pairable with the Chrome extension in `chrome-extension/` (see setup guide below). |
+| `python/nflDraftDashboard.py` | ![Live Draft Dashboard](images/nflDraftDashboard.png) | Browser UI (Dash/Plotly) on the same recommendation engine as the CLI watcher. Runs on your own machine alongside the Sleeper tab. Supports switching drafts live via an in-page URL input — no restart between mocks. Pairable with the Chrome extension in `chrome-extension/` (see setup guide above). |
 
 ### Phase 5: Breakout candidates + rookies (Python + R)
 
@@ -104,64 +156,6 @@ Phases run in order; each depends on the prior phase's output files. **This sect
 | `python/buildNflRookieLandingSpot.py` | — | Vacated target/snap share on a rookie's new team — clear path to touches, independent of talent. |
 | `python/buildNflRookieTrainingPanel.py` / `python/trainNflRookieModel.py` | — | Small-sample rookie-year model (Ridge only): draft capital + combine + landing spot. No prior-year usage available for the main model. |
 | `python/scoreNfl2026Rookies.py` | — | Scores the incoming rookie class with the rookie prior model. |
-
----
-
-## Live Draft Tools: Setup Guide (for friends hosting their own copy)
-
-`nflDraftDashboard.py` (browser dashboard) + a Chrome extension for a pinned side panel next to your Sleeper draft tab. Polls a Sleeper draft and recommends picks in real time. Runs entirely on your own machine — nothing uploaded anywhere.
-
-### 1. Prerequisites
-
-1. Install Python from [python.org](https://www.python.org/downloads/) (Windows/Mac installer, defaults are fine). On Windows, check "Add Python to PATH."
-2. Download this repo: GitHub → green "Code" button → "Download ZIP" → unzip.
-3. Open a terminal in the unzipped folder:
-   - **Windows**: File Explorer → address bar → type `cmd` → Enter.
-   - **Mac**: Terminal → `cd ` (with trailing space) → drag the folder in → Enter.
-4. Install dependencies:
-   ```
-   pip install pandas numpy requests plotly dash
-   ```
-That's it — `vorp_2026.csv` and the other data files the dashboard reads ship pre-built inside the repo download itself, so there's nothing else to fetch or ask James for.
-
-### 2. Find your draft ID and slot
-
-- **Draft ID**: open your Sleeper draft, copy the number from the URL — `https://sleeper.com/draft/nfl/`**`1234567890123456789`**.
-- **Slot**: your pick position in round 1 (e.g. pick 5th → slot `5`).
-
-### 3. Start the dashboard + install the extension
-
-**Start the dashboard** (no draft ID/slot needed at launch):
-```
-python python/nflDraftDashboard.py --port 8877
-```
-The app starts blank and stays running across every mock draft. Leave the terminal open; closing it stops the dashboard.
-
-**Install the extension (one-time):**
-1. Chrome → `chrome://extensions` → enable **Developer mode** (top right).
-2. **Load unpacked** → select `chrome-extension/live-draft-sidepanel` inside your unzipped repo.
-3. Click the extension's toolbar icon — opens a pinned side panel next to any tab, including your Sleeper draft.
-4. In the panel's top bar, enter `http://127.0.0.1:8877` and click **Save**. This persists across restarts.
-
-**Each draft:**
-1. In the dashboard (side panel or `http://127.0.0.1:8877` in a full tab), paste your draft ID/URL and slot into the **Load Draft** bar at the top of the page.
-2. Click **Load Draft**.
-3. To switch to a new mock, paste the new draft ID/slot and click **Load Draft** again — no restart required.
-
-(You can still pass `<draft_id> <my_slot>` as CLI args at launch if you prefer — see `--help` — but they're optional; the in-page bar is the normal flow.)
-
-**Running the dashboard on a different machine than your browser** (e.g. hosting on a home server, viewing from a laptop): start it with `--host 0.0.0.0` instead of the default `127.0.0.1`, then use that machine's LAN IP (e.g. `http://10.0.0.x:8877`) in the extension's URL bar instead of `127.0.0.1`. Only do this on a trusted home network — `0.0.0.0` accepts connections from any device that can reach that IP.
-
-### Troubleshooting
-
-| Symptom | Fix |
-|---|---|
-| `command not found: python` | Use `python3` instead of `python`. |
-| `error: draft_id and my_slot must be given together, or both omitted` | You passed one CLI arg but not the other — pass both, or neither and use the Load Draft bar instead. |
-| Stuck at "Draft not started yet" | Draft hasn't begun on Sleeper's end, or wrong draft ID — recheck the URL. |
-| `ModuleNotFoundError` | Re-run the `pip install` command from step 1.4. |
-| Extension side panel says "refused to connect" | Dashboard isn't running, or the URL in the panel doesn't match where it's actually listening (`127.0.0.1` vs a LAN IP — see above). |
-| Red banner: "vorp_2026.csv is missing/broken" | Shouldn't happen on a fresh clone (the file ships in the repo) — if you deleted/moved it, re-download the repo or restore `outputs/fantasy/vorp_2026.csv`. |
 
 ---
 
